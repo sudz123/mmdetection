@@ -2687,8 +2687,7 @@ class SimpleCopyPaste:
         return np.where(parent_mask, 0, child_mask)
 
     def get_box_from_mask(self, mask):
-        """Convert mask Y to a bounding box, assumes 0 as background nonzero
-        object."""
+        """Convert mask Y to a bounding box, assumes 0 as background ; nonzero as object."""
         Y_vals, X_vals = np.nonzero(
             mask)  # gives in a Xi , Yi co-ord system in the cols and rows
         if len(Y_vals) == 0:

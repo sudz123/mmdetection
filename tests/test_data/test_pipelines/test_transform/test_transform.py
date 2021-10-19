@@ -10,7 +10,7 @@ from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets.builder import PIPELINES
-from .utils import create_random_bboxes
+from .utils import create_random_bboxes, create_random_masks
 
 
 def test_resize():
@@ -965,3 +965,48 @@ def test_mixup():
     assert results['gt_labels'].dtype == np.int64
     assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
+
+
+def test_simple_copy_paste():
+    # test assertion for invalid scale range
+    with pytest.raises(AssertionError):
+        transform = dict(type='SimpleCopyPaste', scale=0.5)
+        build_from_cfg(transform, PIPELINES)
+
+    results = dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
+    results['img'] = img
+    results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
+
+    h, w, _ = img.shape
+    # TODO work on masks function -> use get boxes from masks code
+    # steps
+    # make masks first (n masks)
+    # use boxes_from_masks func to get the random boxes (create_random_bboxes_from_masks)
+    gt_masks = create_random_masks(8, w, h)
+    gt_bboxes = create_random_bboxes(gt_masks.shape[0], w, h)
+    gt_bboxes_ignore = create_random_bboxes(2, w, h)
+
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
+    results['gt_bboxes'] = gt_bboxes
+    results['gt_bboxes_ignore'] = gt_bboxes_ignore
+    results['gt_masks'] = gt_masks
+
+    transform = dict(type='SimpleCopyPaste', scale=(0.1, 2))
+    simple_copy_paste_module = build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid mix_results
+    with pytest.raises(AssertionError):
+        simple_copy_paste_module(results)
+
+    results['mix_results'] = [copy.deepcopy(results)] * 1
+    simple_copy_paste_module(results)
+
+    # assert results['img'].shape[:2] == (288, 512) # TODO just check for datatype, can't check size
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    # assert results['gt_bboxes'].dtype == np.float32 # TODO check boxes final datatype
+    assert results['gt_bboxes_ignore'].dtype == np.float32
+    # assert results['gt_masks'].dtype == np.float32 # TODO check this datatype
+    assert results['gt_masks'] == results['gt_bboxes'].shape[0]

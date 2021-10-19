@@ -76,3 +76,21 @@ def create_random_bboxes(num_bboxes, img_w, img_h):
     bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
         np.float32)
     return bboxes
+
+
+def create_random_masks(num_masks, mask_w, mask_h):
+    pass
+#     arr = np.zeros(num_masks)
+#
+#     # TODO create ndarray as masks, make them in the shape (5, h, w) same as the one given to us in the original method
+#     pass
+#
+# >>> def rand_bin_array(K, N):
+#     arr = np.zeros(N)
+#     arr[:K]  = 1
+#     np.random.shuffle(arr)
+#     return arr
+#
+# >>> rand_bin_array(5,15)
+# array([ 0.,  1.,  0.,  1.,  1.,  1.,  0.,  0.,  0.,  1.,  0.,  0.,  0.,
+#         0.,  0.])
