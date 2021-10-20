@@ -78,13 +78,8 @@ def create_random_bboxes(num_bboxes, img_w, img_h):
     return bboxes
 
 
-def create_random_masks(num_masks, mask_w, mask_h):
+def create_random_masks(num_masks, mask_w, mask_h) -> list:
     pass
-#     arr = np.zeros(num_masks)
-#
-#     # TODO create ndarray as masks, make them in the shape (5, h, w) same as the one given to us in the original method
-#     pass
-#
 # >>> def rand_bin_array(K, N):
 #     arr = np.zeros(N)
 #     arr[:K]  = 1
@@ -94,3 +89,21 @@ def create_random_masks(num_masks, mask_w, mask_h):
 # >>> rand_bin_array(5,15)
 # array([ 0.,  1.,  0.,  1.,  1.,  1.,  0.,  0.,  0.,  1.,  0.,  0.,  0.,
 #         0.,  0.])
+
+
+def create_random_bboxes_from_masks(mask_list) -> list:
+    """Convert mask Y to a bounding box, assumes 0 as background nonzero object"""
+    random_masks = []
+    for mask in mask_list:
+        Y_vals, X_vals = np.nonzero(mask)   # gives in a Xi , Yi co-ord system in the cols and rows
+
+        if len(Y_vals) == 0:
+            random_masks.append(np.zeros(4, dtype=np.float32))
+
+        y1 = np.min(Y_vals)
+        x1 = np.min(X_vals)
+        y2 = np.max(Y_vals)
+        x2 = np.max(X_vals)
+
+        random_masks.append(np.array([x1, y1, x2, y2], dtype=np.float32))
+    return np.array(random_masks)

@@ -10,7 +10,7 @@ from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets.builder import PIPELINES
-from .utils import create_random_bboxes, create_random_masks
+from .utils import create_random_bboxes, create_random_masks, create_random_bboxes_from_masks
 
 
 def test_resize():
@@ -981,11 +981,11 @@ def test_simple_copy_paste():
 
     h, w, _ = img.shape
     # TODO work on masks function -> use get boxes from masks code
-    # steps
     # make masks first (n masks)
     # use boxes_from_masks func to get the random boxes (create_random_bboxes_from_masks)
     gt_masks = create_random_masks(8, w, h)
-    gt_bboxes = create_random_bboxes(gt_masks.shape[0], w, h)
+    # masks will be made from gt masks, hence no need to predefine
+    gt_bboxes = create_random_bboxes_from_masks(gt_masks)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
 
     results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
@@ -1003,10 +1003,15 @@ def test_simple_copy_paste():
     results['mix_results'] = [copy.deepcopy(results)] * 1
     simple_copy_paste_module(results)
 
-    # assert results['img'].shape[:2] == (288, 512) # TODO just check for datatype, can't check size
+    assert results['img'].shape[2] == 3
+    assert results['img'].dtype == np.uint8
+
     assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
     assert results['gt_labels'].dtype == np.int64
-    # assert results['gt_bboxes'].dtype == np.float32 # TODO check boxes final datatype
+
+    assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
-    # assert results['gt_masks'].dtype == np.float32 # TODO check this datatype
-    assert results['gt_masks'] == results['gt_bboxes'].shape[0]
+
+    assert results['gt_masks'].masks.dtype == np.uint8
+    assert results['gt_masks'].masks.shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_masks'].masks.shape[0] == results['gt_labels'].shape[0]
