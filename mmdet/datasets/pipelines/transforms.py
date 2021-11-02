@@ -2636,14 +2636,15 @@ class RandomAffine:
 class SimpleCopyPaste:
 
     def __init__(self,
-                 scale=(0.1, 2),
+                 img_scale=(0.1, 2),
                  max_paste_objects=5,
                  prob=0.5,
                  occluded_area_thresh=300,
                  box_occlusion_thresh=10):
+        assert isinstance(img_scale, tuple), "Image rescale range must be a tuple(min_scale_ratio, max_scale_ratio)"
         self.max_paste_objects = max_paste_objects
         self.prob = prob
-        self.resize_scale = scale
+        self.resize_scale = img_scale
         self.occluded_area_thresh = occluded_area_thresh
         self.box_occlusion_thresh = box_occlusion_thresh
 
@@ -2779,6 +2780,8 @@ class SimpleCopyPaste:
         return flipped
 
     def __call__(self, results):
+
+        assert 'mix_results' in results.keys(), "mix result key not present"
 
         results_cpy = copy.deepcopy(results)
         results_cpy2 = results_cpy['mix_results'][0]

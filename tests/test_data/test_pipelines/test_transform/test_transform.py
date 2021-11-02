@@ -10,7 +10,8 @@ from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets.builder import PIPELINES
-from .utils import create_random_bboxes, create_random_masks, create_random_bboxes_from_masks
+from .utils import create_random_bboxes, create_random_masks, create_boxes_from_masks, get_random_idx,\
+    bbox_flip, rescale_boxes, is_box_occluded, get_updated_mask
 
 
 def test_resize():
@@ -968,9 +969,20 @@ def test_mixup():
 
 
 def test_simple_copy_paste():
+    """
+    # TODO work on masks function -> use get boxes from masks code
+    # make masks first (n masks)
+    # use boxes_from_masks func to get the random boxes (create_random_bboxes_from_masks)
+
+    Start with getting random data, data which breaks the algo, (ask sudarshan for the cases) " \
+    " Then check out each func with an assertion in a deterministic format "
+    # TODO just remember this works on the masks ; make sure if the masks are of varied sizes and break the system
+    # test out the individual functions before then we can run the whole loop on assert
+    """
+
     # test assertion for invalid scale range
     with pytest.raises(AssertionError):
-        transform = dict(type='SimpleCopyPaste', scale=0.5)
+        transform = dict(type='SimpleCopyPaste', img_scale=0.5)
         build_from_cfg(transform, PIPELINES)
 
     results = dict()
@@ -979,13 +991,12 @@ def test_simple_copy_paste():
     results['img'] = img
     results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
 
+    max_paste_objects = 6
+    box_occlusion_thresh = 10
+
     h, w, _ = img.shape
-    # TODO work on masks function -> use get boxes from masks code
-    # make masks first (n masks)
-    # use boxes_from_masks func to get the random boxes (create_random_bboxes_from_masks)
-    gt_masks = create_random_masks(8, w, h)
-    # masks will be made from gt masks, hence no need to predefine
-    gt_bboxes = create_random_bboxes_from_masks(gt_masks)
+    gt_masks = create_random_masks(6, w, h)
+    gt_bboxes = create_boxes_from_masks(gt_masks.masks)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
 
     results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
@@ -993,15 +1004,15 @@ def test_simple_copy_paste():
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     results['gt_masks'] = gt_masks
 
-    transform = dict(type='SimpleCopyPaste', scale=(0.1, 2))
+    transform = dict(type='SimpleCopyPaste', img_scale=(0.1, 2))
     simple_copy_paste_module = build_from_cfg(transform, PIPELINES)
 
-    # test assertion for invalid mix_results
+    # test assertion for mix_results key not present
     with pytest.raises(AssertionError):
         simple_copy_paste_module(results)
 
     results['mix_results'] = [copy.deepcopy(results)] * 1
-    simple_copy_paste_module(results)
+    results = simple_copy_paste_module(results)
 
     assert results['img'].shape[2] == 3
     assert results['img'].dtype == np.uint8

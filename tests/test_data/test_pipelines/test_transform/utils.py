@@ -78,21 +78,51 @@ def create_random_bboxes(num_bboxes, img_w, img_h):
     return bboxes
 
 
-def create_random_masks(num_masks, mask_w, mask_h) -> list:
-    pass
-# >>> def rand_bin_array(K, N):
-#     arr = np.zeros(N)
-#     arr[:K]  = 1
-#     np.random.shuffle(arr)
-#     return arr
-#
-# >>> rand_bin_array(5,15)
-# array([ 0.,  1.,  0.,  1.,  1.,  1.,  0.,  0.,  0.,  1.,  0.,  0.,  0.,
-#         0.,  0.])
+def create_random_masks(num_masks, mask_w, mask_h, create_overlapping=False) -> BitmapMasks:
+    mask_arr = np.zeros((num_masks, mask_w, mask_h), dtype=np.uint8)
+
+    if create_overlapping:
+        mask_arr[0, 100:150, 100:120] = 1
+        mask_arr[1, 100:450, 100:260] = 1
+        mask_arr[2, 70:300, 130:200] = 1
+        mask_arr[3, 90:250, 100:260] = 1
+
+    else:
+        # random box
+        r1, r2 = np.random.randint(0, mask_w, 2)
+        if r1 > r2:
+            temp, r1 = r1, r2
+            r2 = temp
+        # value_when_true if condition else value_when_false
+        c1, c2 = np.random.randint(0, mask_h, 2)
+        if c1 > c2:
+            temp, c1 = c1, c2
+            c2 = temp
+
+        mask_arr[0, r1:r2, c1:c2] = 1
+
+        # overlapping
+        mask_arr[1, 100:150, 100:120] = 1
+        mask_arr[2, 200:450, 100:260] = 1
+
+        # small
+        mask_arr[3, 250:350, 100:140] = 1
+
+        # large
+        mask_arr[4, 50:70, 30:190] = 1
+
+        # edges
+        mask_arr[5, 0:150, 0:50] = 1
+
+    mask_arr = BitmapMasks(mask_arr, mask_arr.shape[2],
+                           mask_arr.shape[1])
+
+    return mask_arr
 
 
-def create_random_bboxes_from_masks(mask_list) -> list:
+def create_boxes_from_masks(mask_list) -> np.array:
     """Convert mask Y to a bounding box, assumes 0 as background nonzero object"""
+    assert mask_list.shape[1] % 4 == 0
     random_masks = []
     for mask in mask_list:
         Y_vals, X_vals = np.nonzero(mask)   # gives in a Xi , Yi co-ord system in the cols and rows
@@ -107,3 +137,51 @@ def create_random_bboxes_from_masks(mask_list) -> list:
 
         random_masks.append(np.array([x1, y1, x2, y2], dtype=np.float32))
     return np.array(random_masks)
+
+
+def get_random_idx(max_paste_objects, arr) -> np.array:
+    if arr.shape[0] <= max_paste_objects:
+        return np.random.randint(0, arr.shape[0], size=arr.shape[0])
+    return np.random.randint(0, arr.shape[0], size=max_paste_objects)
+
+
+def bbox_flip(bboxes, img_shape) -> np.array:
+    """Flip bboxes horizontally.
+
+    Args:
+        bboxes (numpy.ndarray): Bounding boxes, shape (..., 4*k)
+        img_shape (tuple[int]): Image shape (height, width)
+
+    Returns:
+        numpy.ndarray: Flipped bounding boxes.
+    """
+
+    assert bboxes.shape[-1] % 4 == 0
+    flipped = bboxes.copy()
+    w = img_shape[1]
+    flipped[..., 0::4] = w - bboxes[..., 2::4]
+    flipped[..., 2::4] = w - bboxes[..., 0::4]
+    return flipped
+
+
+def rescale_boxes(bboxes, rescale_ratio, img_shape=None, clip=False) -> np.array:
+    if isinstance(rescale_ratio, float):
+        bboxes = bboxes * rescale_ratio
+    if isinstance(rescale_ratio, tuple):
+        bboxes[:, 0::2] = bboxes[:, 0::2] * rescale_ratio[1]
+        bboxes[:, 1::2] = bboxes[:, 1::2] * rescale_ratio[0]
+    if clip:
+        bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
+        bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
+    return bboxes
+
+
+def is_box_occluded(box1, box2, box_iou_threshold) -> bool:
+    if np.any(np.abs(box1 - box2) > box_iou_threshold):
+        return True
+    return False
+
+
+def get_updated_mask(parent_mask, child_mask) -> np.array:
+    assert parent_mask.shape == child_mask.shape, 'Cannot compare two arrays of different size'
+    return np.where(parent_mask, 0, child_mask)
