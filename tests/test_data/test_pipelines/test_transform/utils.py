@@ -82,7 +82,7 @@ def create_random_masks(num_masks, mask_w, mask_h, create_overlapping=False) -> 
     mask_arr = np.zeros((num_masks, mask_w, mask_h), dtype=np.uint8)
 
     if create_overlapping:
-        mask_arr[0, 100:150, 100:120] = 1
+        mask_arr[0, 100:110, 100:120] = 1
         mask_arr[1, 100:450, 100:260] = 1
         mask_arr[2, 70:300, 130:200] = 1
         mask_arr[3, 90:250, 100:260] = 1
