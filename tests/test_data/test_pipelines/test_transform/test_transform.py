@@ -1002,7 +1002,7 @@ def test_simple_copy_paste():
 
     # test assertion for creating box from mask function
     boxes = create_boxes_from_masks(gt_masks.masks)
-    assert np.array([0.,  20., 511.,  47.]).all() == gt_bboxes[0].all()   # hand code these values
+    assert np.array([0.,  20., 511.,  47.]).all() == gt_bboxes[0].all()
     assert np.array([4.,  56., 503.,  84.]).all() == gt_bboxes[1].all()
     assert np.array([0., 112., 511., 253.]).all() == gt_bboxes[2].all()
     assert np.array([0., 140., 511., 196.]).all() == gt_bboxes[3].all()
@@ -1024,7 +1024,7 @@ def test_simple_copy_paste():
 
     # test assertion for rescale boxes function
     rescaled_boxes = rescale_boxes(gt_bboxes, (1.4, 1.6))
-    assert np.array([0., 109.2, 817.60004, 294.]).all() == rescaled_boxes[0].all()    # hand code these values
+    assert np.array([0., 109.2, 817.60004, 294.]).all() == rescaled_boxes[0].all()
     assert np.array([6.4, 78.4, 804.8, 117.6]).all() == rescaled_boxes[1].all()
     assert np.array([0., 156.8, 817.60004, 354.19998]).all() == rescaled_boxes[2].all()
     assert np.array([0., 196., 817.60004, 274.4]).all() == rescaled_boxes[3].all()
